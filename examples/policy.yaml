@@ -1,0 +1,75 @@
+# policy.yaml — Team-specific lint policy for prom-alert-lint
+#
+# This file lets you customise the linter's expectations to match
+# your organisation's conventions.  Only include keys you want to
+# override — omitted keys use built-in defaults.
+
+# Labels that every alert must have
+required_labels:
+  - severity
+
+# Annotations that every alert must have
+required_annotations:
+  - summary
+  - description
+
+# Keys the linter checks to determine ownership — any one is sufficient
+preferred_owner_keys:
+  - team
+  - service
+  - owner
+
+# Labels that change across deploys/reschedules — equality-matching
+# on these is fragile
+ephemeral_labels:
+  - pod
+  - pod_name
+  - instance
+  - container
+  - container_name
+  - endpoint
+  - revision
+
+# Minimum acceptable 'for' duration — shorter durations get flagged
+minimum_for_duration: "2m"
+
+# Suggested 'for' duration in autofix snippets
+default_for_suggestion: "5m"
+
+# Which label key holds the alert severity
+severity_label_key: "severity"
+
+# Values that indicate "warning" severity
+warning_severity_values:
+  - warning
+
+# Values that indicate "critical" severity
+critical_severity_values:
+  - critical
+  - page
+
+# Annotation keys the linter accepts as a runbook link
+runbook_annotation_keys:
+  - runbook_url
+  - runbook
+
+# Regex patterns for alert names that are too generic
+generic_alert_name_patterns:
+  - "^Alert$"
+  - "^Problem$"
+  - "^Error$"
+  - "^Warning$"
+  - "^Critical$"
+  - "^HighCPU$"
+  - "^HighLatency$"
+  - "^HighMemory$"
+
+# Metrics where 'metric == 0' without label filters is risky
+broad_selector_metrics:
+  - up
+
+# Check IDs to skip entirely (e.g. if your team disagrees with a check)
+ignored_checks: []
+
+# Alert names to exclude from linting
+ignored_alert_names: []

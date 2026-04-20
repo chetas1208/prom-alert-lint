@@ -1,0 +1,97 @@
+# mixed_rules.yaml — realistic mix of good and questionable rules
+
+groups:
+  - name: service-health
+    rules:
+      # Good rule — should have few or no findings
+      - alert: ServiceHighErrorRateWarning
+        expr: |
+          sum(rate(http_requests_total{job="web-api", code=~"5.."}[5m]))
+          /
+          sum(rate(http_requests_total{job="web-api"}[5m]))
+          > 0.01
+        for: 10m
+        labels:
+          severity: warning
+          team: web
+          service: web-api
+        annotations:
+          summary: "Web API error rate above 1%"
+          description: "Error rate for the web-api service is elevated."
+          runbook_url: "https://wiki.example.com/runbooks/web-api-errors"
+
+      # STAB005: critical fires after 3m but warning requires 10m
+      - alert: ServiceHighErrorRateCritical
+        expr: |
+          sum(rate(http_requests_total{job="web-api", code=~"5.."}[5m]))
+          /
+          sum(rate(http_requests_total{job="web-api"}[5m]))
+          > 0.05
+        for: 3m
+        labels:
+          severity: critical
+          team: web
+          service: web-api
+        annotations:
+          summary: "Web API error rate above 5%"
+          description: "Error rate for the web-api service is critically high."
+          runbook_url: "https://wiki.example.com/runbooks/web-api-errors"
+
+  - name: infrastructure
+    rules:
+      # META003, META004: missing description and runbook
+      - alert: NodeHighDiskUsage
+        expr: |
+          (node_filesystem_size_bytes{fstype!~"tmpfs|overlay"} - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"})
+          /
+          node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}
+          > 0.85
+        for: 15m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "Node disk usage above 85%"
+
+      # Recording rule — should be skipped entirely
+      - record: job:http_requests_total:rate5m
+        expr: sum(rate(http_requests_total[5m])) by (job)
+
+      # META001: missing severity, STAB002: short for
+      - alert: CertExpiresInOneWeek
+        expr: |
+          (probe_ssl_earliest_cert_expiry - time()) / 86400 < 7
+        for: 1m
+        labels:
+          team: security
+        annotations:
+          summary: "TLS certificate expires within 7 days"
+          description: "Certificate for {{ $labels.instance }} is expiring soon."
+          runbook_url: "https://wiki.example.com/runbooks/cert-expiry"
+
+  - name: redis
+    rules:
+      # REL002 / REL003: identical expression, different names and metadata
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes{job="redis"} / redis_memory_max_bytes{job="redis"} > 0.80
+        for: 10m
+        labels:
+          severity: warning
+          team: data
+          service: redis
+        annotations:
+          summary: "Redis memory usage high"
+          description: "Redis is using more than 80% of configured max memory."
+          runbook_url: "https://wiki.example.com/runbooks/redis-memory"
+
+      - alert: RedisCacheMemoryHigh
+        expr: redis_memory_used_bytes{job="redis"} / redis_memory_max_bytes{job="redis"} > 0.80
+        for: 10m
+        labels:
+          severity: warning
+          team: cache-team
+          service: redis
+        annotations:
+          summary: "Redis cache memory is high"
+          description: "Memory pressure on redis cache."
+          runbook_url: "https://wiki.example.com/runbooks/redis-cache"

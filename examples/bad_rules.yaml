@@ -1,0 +1,59 @@
+# bad_rules.yaml — intentionally poor alerting rules for demonstration
+# Every rule here should trigger multiple lint findings.
+
+groups:
+  - name: bad-alerts
+    rules:
+      # META001, META002, META003, META004, META005, META006
+      # STAB001, SEL002, SEL001
+      - alert: Alert
+        expr: up == 0
+
+      # STAB002, STAB003, META001, META002, META003, META004, META005
+      - alert: HighCPU
+        expr: irate(node_cpu_seconds_total{mode="idle"}[30s]) < 0.1
+        for: 30s
+
+      # SEL003, SEL004, META001, STAB001
+      - alert: PodCrashing
+        expr: kube_pod_status_phase{pod="api-7b4f8c6d9-xk2qw", phase="Failed"} > 0
+        labels:
+          team: backend
+
+      # STAB004, SEL001
+      - alert: DiskAlmostFull
+        expr: node_filesystem_avail_bytes < 1073741824
+        for: 2m
+        labels:
+          severity: warning
+
+      # REL001 (duplicate of first 'Alert'), REL006 (conflicting severity)
+      - alert: Alert
+        expr: up == 0
+        labels:
+          severity: critical
+
+  - name: bad-thresholds
+    rules:
+      # REL004: critical threshold (0.20) is less severe than warning (0.10)
+      - alert: HighMemoryWarning
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.10
+        for: 10m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "Memory available below 10%"
+          description: "Host memory is running low."
+          runbook_url: "https://wiki.example.com/runbooks/memory"
+
+      - alert: HighMemoryCritical
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.20
+        for: 5m
+        labels:
+          severity: critical
+          team: infra
+        annotations:
+          summary: "Memory available below 20%"
+          description: "Host memory is critically low."
+          runbook_url: "https://wiki.example.com/runbooks/memory"

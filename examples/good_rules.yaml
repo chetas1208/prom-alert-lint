@@ -1,0 +1,60 @@
+# good_rules.yaml — well-structured Prometheus alerting rules
+# These rules follow best practices and should produce few or no findings.
+
+groups:
+  - name: api-availability
+    rules:
+      - alert: ApiServerHighErrorRate
+        expr: |
+          sum(rate(http_requests_total{job="apiserver", code=~"5.."}[5m]))
+          /
+          sum(rate(http_requests_total{job="apiserver"}[5m]))
+          > 0.05
+        for: 10m
+        labels:
+          severity: critical
+          team: platform
+          service: apiserver
+        annotations:
+          summary: "API server error rate is above 5%"
+          description: |
+            The API server {{ $labels.job }} is returning more than 5% server
+            errors over the last 10 minutes.
+          runbook_url: "https://wiki.example.com/runbooks/api-high-error-rate"
+
+      - alert: ApiServerHighLatencyP99
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(http_request_duration_seconds_bucket{job="apiserver"}[5m]))
+            by (le)
+          ) > 2.0
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          service: apiserver
+        annotations:
+          summary: "API server p99 latency exceeds 2 seconds"
+          description: |
+            The 99th percentile request latency for the API server has been
+            above 2 seconds for 15 minutes.
+          runbook_url: "https://wiki.example.com/runbooks/api-high-latency"
+
+  - name: database
+    rules:
+      - alert: PostgresConnectionPoolExhausted
+        expr: |
+          pg_stat_activity_count{job="postgres-exporter", state="active"}
+          /
+          pg_settings_max_connections{job="postgres-exporter"}
+          > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          team: data
+          service: postgres
+        annotations:
+          summary: "Postgres connection pool is >85% utilized"
+          description: |
+            The active connection ratio for {{ $labels.instance }} is above 85%.
+          runbook_url: "https://wiki.example.com/runbooks/pg-connection-pool"
