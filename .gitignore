@@ -14,10 +14,21 @@ env/
 htmlcov/
 .mypy_cache/
 .ruff_cache/
+
+# Editor
 *.swp
 *.swo
 *~
 .DS_Store
 .idea/
 .vscode/
-Report.tex/
+
+# LaTeX artifacts
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+# Keep the actual .tex and final .pdf if needed, ignore transient files.
